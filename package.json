@@ -1,0 +1,11 @@
+{
+  "name": "studioos",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "echo \"Run dev scripts inside apps\""
+  }
+}
