@@ -39,22 +39,50 @@ model Studio {
   ownerId Int
   owner   User  @relation(fields: [ownerId], references: [id])
 
+  projects Project[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Project {
-  id          Int           @id @default(autoincrement())
-  title       String
-  status      ProjectStatus @default(RECORDING)
-  progress    Int           @default(0)
-  dueDate     DateTime?
-  artistId    Int
-  producerId  Int?
-  artist      User          @relation("ArtistProjects", fields: [artistId], references: [id])
-  producer    User?         @relation("ProducerProjects", fields: [producerId], references: [id])
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id           Int           @id @default(autoincrement())
+  title        String
+  status       ProjectStatus @default(BOOKED)
+  progress     Int           @default(20)
+
+  artistId     Int
+  producerId   Int
+  studioId     String
+
+  bookingRef   String
+  paymentRef   String?
+
+  startedAt    DateTime      @default(now())
+  dueAt        DateTime      // startedAt + 7 days
+  completedAt  DateTime?
+
+  artist       User          @relation("ArtistProjects", fields: [artistId], references: [id])
+  producer     User          @relation("ProducerProjects", fields: [producerId], references: [id])
+  studio       Studio        @relation(fields: [studioId], references: [id])
+
+  files        ProjectFile[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model ProjectFile {
+  id          Int      @id @default(autoincrement())
+  projectId   Int
+  stage       ProjectStatus
+
+  software    String   // e.g. "FL Studio", "Pro Tools"
+  projectPath String   // local path or network path
+
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id])
 }
 
 enum Role {
@@ -66,11 +94,10 @@ enum Role {
 }
 
 enum ProjectStatus {
+  BOOKED
+  FULLY_PAID
   RECORDING
   MIXING
-  REVIEW
-  PAYMENT
-  RELEASE
-  STREAMING
-  ANALYTICS
+  MASTERING
+  READY
 }
