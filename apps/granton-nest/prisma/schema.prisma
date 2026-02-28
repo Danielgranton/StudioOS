@@ -18,8 +18,43 @@ model User {
   name      String
   password  String
   role      Role     @default(USER)
+
+  studios   Studio[]
+  projectsAsArtist   Project[] @relation("ArtistProjects")
+  projectsAsProducer Project[] @relation("ProducerProjects")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Studio {
+  id           String   @id @default(uuid())
+  studioName   String
+  location     String
+  services     String[]
+  pricing      Json?
+  availability String
+ 
+
+  ownerId Int
+  owner   User  @relation(fields: [ownerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Project {
+  id          Int           @id @default(autoincrement())
+  title       String
+  status      ProjectStatus @default(RECORDING)
+  progress    Int           @default(0)
+  dueDate     DateTime?
+  artistId    Int
+  producerId  Int?
+  artist      User          @relation("ArtistProjects", fields: [artistId], references: [id])
+  producer    User?         @relation("ProducerProjects", fields: [producerId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 enum Role {
@@ -28,4 +63,14 @@ enum Role {
   PRODUCER
   ARTIST
   USER
+}
+
+enum ProjectStatus {
+  RECORDING
+  MIXING
+  REVIEW
+  PAYMENT
+  RELEASE
+  STREAMING
+  ANALYTICS
 }
