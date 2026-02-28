@@ -12,5 +12,5 @@ export class UpdateProjectStatusDto {
 
   @IsOptional()
   @IsDateString()
-  dueDate?: string;
+  dueAt?: string;
 }

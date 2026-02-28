@@ -1,4 +1,15 @@
-import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 import { ProjectStatus } from '@prisma/client';
 
 export class CreateProjectDto {
@@ -9,9 +20,23 @@ export class CreateProjectDto {
   @IsInt()
   artistId!: number;
 
-  @IsOptional()
   @IsInt()
-  producerId?: number;
+  producerId!: number;
+
+  @IsUUID()
+  studioId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  bookingRef!: string;
+
+  @IsOptional()
+  @IsString()
+  paymentRef?: string;
+
+  @IsOptional()
+  @IsIn(['BOOKED', 'FULLY_PAID'])
+  paymentStatus?: 'BOOKED' | 'FULLY_PAID';
 
   @IsOptional()
   @IsEnum(ProjectStatus)
@@ -24,5 +49,5 @@ export class CreateProjectDto {
 
   @IsOptional()
   @IsDateString()
-  dueDate?: string;
+  dueAt?: string;
 }

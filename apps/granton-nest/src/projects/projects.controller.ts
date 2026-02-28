@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
+import { AttachProjectDto } from './dto/attach-project.dto';
 
 @Controller('projects')
 export class ProjectsController {
@@ -28,5 +29,13 @@ export class ProjectsController {
     @Body() body: UpdateProjectStatusDto,
   ) {
     return this.projects.updateStatus(id, body);
+  }
+
+  @Post(':id/attach')
+  attach(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: AttachProjectDto,
+  ) {
+    return this.projects.attachProject(id, body);
   }
 }
