@@ -1,41 +1,66 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
-import { ProjectsService } from './projects.service';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { Roles } from '../roles/roles.decorator';
+import { RolesGuard } from '../roles/roles.guard';
+import { AttachProjectDto } from './dto/attach-project.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
-import { AttachProjectDto } from './dto/attach-project.dto';
+import { ProjectsService } from './projects.service';
 
 @Controller('projects')
 export class ProjectsController {
-  constructor(private readonly projects: ProjectsService) {}
+  constructor(private readonly projectService: ProjectsService) {}
 
-  @Post()
-  create(@Body() body: CreateProjectDto) {
-    return this.projects.create(body);
+  // called by booking/payment service
+  @Post('from-booking')
+  createProject(@Body() dto: CreateProjectDto) {
+    return this.projectService.createFromBooking(dto);
+  }
+
+  // artist dashboard
+  @Get('artist/:artistId')
+  getArtistProjects(@Param('artistId', ParseIntPipe) artistId: number) {
+    return this.projectService.getArtistProjects(artistId);
+  }
+
+  // producer dashboard
+  @Get('producer/dashboard')
+  @Roles('PRODUCER')
+  @UseGuards(RolesGuard)
+  getProducerDashboard(@Req() req: { user: { userId: number } }) {
+    return this.projectService.producerDashboard(req.user.userId);
   }
 
   @Get()
   list() {
-    return this.projects.list();
+    return this.projectService.list();
   }
 
   @Get(':id')
   get(@Param('id', ParseIntPipe) id: number) {
-    return this.projects.get(id);
+    return this.projectService.get(id);
   }
 
+  // producer updates project stage
   @Patch(':id/status')
-  updateStatus(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: UpdateProjectStatusDto,
-  ) {
-    return this.projects.updateStatus(id, body);
+  @Roles('PRODUCER')
+  @UseGuards(RolesGuard)
+  updateProjectStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateProjectStatusDto) {
+    return this.projectService.updateStatus(id, dto);
   }
 
+  // attach DAW project path
   @Post(':id/attach')
-  attach(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: AttachProjectDto,
-  ) {
-    return this.projects.attachProject(id, body);
+  attachProject(@Param('id', ParseIntPipe) id: number, @Body() dto: AttachProjectDto) {
+    return this.projectService.attachProject(id, dto);
   }
 }

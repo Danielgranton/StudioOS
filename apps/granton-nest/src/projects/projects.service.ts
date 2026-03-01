@@ -1,13 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ProjectStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AttachProjectDto } from './dto/attach-project.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
-import { AttachProjectDto } from './dto/attach-project.dto';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {}
 
   private readonly progressMap: Record<ProjectStatus, number> = {
     BOOKED: 20,
@@ -22,6 +22,10 @@ export class ProjectsService {
     const next = new Date(date);
     next.setDate(next.getDate() + days);
     return next;
+  }
+
+  async createFromBooking(dto: CreateProjectDto) {
+    return this.create(dto);
   }
 
   async create(dto: CreateProjectDto) {
@@ -58,7 +62,7 @@ export class ProjectsService {
     const startedAt = new Date();
     const dueAt = dto.dueAt ? new Date(dto.dueAt) : this.addDays(startedAt, 7);
 
-    const project = await this.prisma.project.create({
+    return this.prisma.project.create({
       data: {
         title: dto.title,
         artistId: dto.artistId,
@@ -73,7 +77,6 @@ export class ProjectsService {
       },
       include: { artist: true, producer: true, studio: true, files: true },
     });
-    return project;
   }
 
   async list() {
@@ -95,7 +98,7 @@ export class ProjectsService {
   }
 
   async updateStatus(id: number, dto: UpdateProjectStatusDto) {
-    const project = await this.prisma.project.update({
+    return this.prisma.project.update({
       where: { id },
       data: {
         status: dto.status,
@@ -104,7 +107,6 @@ export class ProjectsService {
         completedAt: dto.status === ProjectStatus.MASTERING ? new Date() : null,
       },
     });
-    return project;
   }
 
   async attachProject(projectId: number, dto: AttachProjectDto) {
@@ -123,6 +125,23 @@ export class ProjectsService {
       where: { artistId },
       orderBy: { startedAt: 'asc' },
       include: { files: true, studio: true, producer: true },
+    });
+  }
+
+  async producerDashboard(producerId: number) {
+    return this.prisma.project.findMany({
+      where: {
+        producerId,
+        status: {
+          in: [ProjectStatus.RECORDING, ProjectStatus.MIXING, ProjectStatus.MASTERING, ProjectStatus.READY],
+        },
+      },
+      orderBy: { startedAt: 'asc' },
+      include: {
+        artist: true,
+        studio: true,
+        files: true,
+      },
     });
   }
 }

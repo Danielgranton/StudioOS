@@ -1,3 +1,4 @@
+import { ProjectStatus } from '@prisma/client';
 import {
   IsDateString,
   IsEnum,
@@ -10,7 +11,6 @@ import {
   Max,
   Min,
 } from 'class-validator';
-import { ProjectStatus } from '@prisma/client';
 
 export class CreateProjectDto {
   @IsString()

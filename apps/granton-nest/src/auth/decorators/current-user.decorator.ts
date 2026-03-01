@@ -1,9 +1,11 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 type JwtUser = {
+  
   userId: number;
   email: string;
   role: string;
+
 };
 
 export const CurrentUser = createParamDecorator(
