@@ -77,6 +77,64 @@
     }
 
 
+    async artisstProgress(artistId: number) {
+      return this.prisma.project.findMany({
+        where: { artistId },
+        orderBy: { startedAt: "asc" },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          progress: true,
+          startedAt: true,
+          dueAt: true,
+          files: {
+            select: {
+              stage: true,
+              software: true,
+              projectPath: true,
+              createdAt: true,
+            },
+          },
+        },
+      });
+    }
+
+    async studioLoad() {
+      return this.prisma.project.findMany({
+        include: {
+          _count: {
+            select : { files : true}
+          },
+        },
+      });
+    }
+
+    async delayedProjects() {
+      return this.prisma.project.findMany({
+        where: {
+          dueAt: { lt: new Date() },
+          status: { not: 'READY' },
+
+        },
+
+        include: {
+          studio: true,
+          producer: true,
+          artist: true,
+        }
+      })
+    }
+
+
+      async createMessage(projectId: number, senderId: number, message: string) {
+    return this.prisma.projectMessage.create({
+      data: { projectId, senderId, message },
+    });
+    }
+
+    
+
     async producerDashboard(producerId: number) {
       return this.prisma.project.findMany({
         where: {
