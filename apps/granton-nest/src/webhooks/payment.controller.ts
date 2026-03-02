@@ -5,6 +5,7 @@ import {
   HttpCode,
   Post,
   UnauthorizedException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 
@@ -19,9 +20,16 @@ export class PaymentWebHookController {
       @Headers('x-webhook-secret') webhookSecret?: string,
     ) {
         const expectedSecret = process.env.PAYMENT_WEBHOOK_SECRET;
-        if (expectedSecret && webhookSecret !== expectedSecret) {
+
+        if (!expectedSecret) {
+            console.error('PAYMENT_WEBHOOK_SECRET is not configured');
+            throw new InternalServerErrorException('Webhook security is not configured');
+        }
+
+        if (webhookSecret !== expectedSecret) {
             throw new UnauthorizedException('Invalid webhook secret');
         }
+
         return this.paymentService.processPayment(payload);
     }
 }

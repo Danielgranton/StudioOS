@@ -1,14 +1,14 @@
 from decouple import config
 from flask import Flask
-from mpesa_api import MpesaAPI
-from appy import app as app_blueprint
+from .mpesa_api import MpesaAPI
+from .routes import app as app_blueprint
 
 
 mpesa = MpesaAPI()
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object("config.Config")
+    app.config.from_object("app.config.Config")
 
     # --- M-Pesa config
     app.config.update({
@@ -28,14 +28,8 @@ def create_app():
     mpesa.init_app(app)
     app.mpesa_api = mpesa
 
-    
-    
-   
-       
     # --- Register blueprints
     app.register_blueprint(app_blueprint)
-   
-        
 
     return app
 
