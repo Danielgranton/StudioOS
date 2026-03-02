@@ -58,6 +58,7 @@
 
     <input type="text" id="phone" placeholder="2547XXXXXXXX" required>
     <input type="number" id="amount" placeholder="Amount" required>
+    <input type="text" id="bookingRef" placeholder="Booking Ref (optional)">
 
     <button onclick="pay()">Pay Now</button>
 
@@ -68,6 +69,7 @@
 function pay() {
     const phone = document.getElementById("phone").value;
     const amount = document.getElementById("amount").value;
+    const bookingRef = document.getElementById("bookingRef").value;
     const status = document.getElementById("status");
 
     status.innerText = "Processing...";
@@ -79,7 +81,8 @@ function pay() {
         },
         body: JSON.stringify({
             phone: phone,
-            amount: amount
+            amount: amount,
+            booking_ref: bookingRef || undefined
         })
     })
     .then(response => {
