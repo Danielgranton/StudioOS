@@ -13,3 +13,8 @@ class Config:
     MPESA_INITIATOR_PASSWORD = config('MPESA_INITIATOR_PASSWORD', default='Safaricom999!')
     MPESA_SAF_CALLBACK_URL = config('MPESA_SAF_CALLBACK_URL', default='https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest')
     MPESA_ENVIRONMENT = config('MPESA_ENVIRONMENT', default='sandbox')
+    NEST_PAYMENT_WEBHOOK_URL = config(
+        'NEST_PAYMENT_WEBHOOK_URL',
+        default='http://localhost:3000/webhooks/payment',
+    )
+    NEST_WEBHOOK_SECRET = config('NEST_WEBHOOK_SECRET', default='')
