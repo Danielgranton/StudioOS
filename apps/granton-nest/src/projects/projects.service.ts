@@ -18,10 +18,146 @@ export class ProjectsService {
     READY: 100,
   };
 
+<<<<<<< HEAD
   private addDays(date: Date, days: number): Date {
     const next = new Date(date);
     next.setDate(next.getDate() + days);
     return next;
+=======
+    private addDays(date: Date, days: number): Date {
+      const d = new Date(date);
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+
+    async createFromBooking(dto: CreateProjectDto) {
+      const status =
+        dto.paymentStatus === "FULLY_PAID"
+          ? ProjectStatus.FULLY_PAID
+          : ProjectStatus.BOOKED;
+
+      return this.prisma.project.create({
+        data: {
+          title: dto.title,
+          artistId: dto.artistId,
+          producerId: dto.producerId,
+          studioId: dto.studioId,
+          bookingRef: dto.bookingRef,
+          paymentRef: dto.paymentRef,
+          status,
+          progress: this.progressMap[status],
+          startedAt: new Date(),
+          dueAt: this.addDays(new Date(), 7),
+        },
+      });
+    }
+
+    async updateStatus(projectId: number, dto: UpdateProjectStatusDto) {
+      return this.prisma.project.update({
+        where: { id: projectId },
+        data: {
+          status: dto.status,
+          progress: this.progressMap[dto.status],
+          completedAt: dto.status === ProjectStatus.MASTERING ? new Date() : null,
+        },
+      });
+    }
+
+    async attachProject(projectId: number, dto: AttachProjectDto) {
+      return this.prisma.projectFile.create({
+        data: {
+          projectId,
+          software: dto.software,
+          projectPath: dto.projectPath,
+          stage: dto.stage,
+        },
+      });
+    }
+
+    async getArtistProjects(artistId: number) {
+      return this.prisma.project.findMany({
+        where: { artistId },
+        orderBy: { startedAt: "asc" },
+        include: { files: true },
+      });
+    }
+
+
+    async artisstProgress(artistId: number) {
+      return this.prisma.project.findMany({
+        where: { artistId },
+        orderBy: { startedAt: "asc" },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          progress: true,
+          startedAt: true,
+          dueAt: true,
+          files: {
+            select: {
+              stage: true,
+              software: true,
+              projectPath: true,
+              createdAt: true,
+            },
+          },
+        },
+      });
+    }
+
+    async studioLoad() {
+      return this.prisma.project.findMany({
+        include: {
+          _count: {
+            select : { files : true}
+          },
+        },
+      });
+    }
+
+    async delayedProjects() {
+      return this.prisma.project.findMany({
+        where: {
+          dueAt: { lt: new Date() },
+          status: { not: 'READY' },
+
+        },
+
+        include: {
+          studio: true,
+          producer: true,
+          artist: true,
+        }
+      })
+    }
+
+
+      async createMessage(projectId: number, senderId: number, message: string) {
+    return this.prisma.projectMessage.create({
+      data: { projectId, senderId, message },
+    });
+    }
+
+    
+
+    async producerDashboard(producerId: number) {
+      return this.prisma.project.findMany({
+        where: {
+          producerId,
+          status: {
+            in: ['RECORDING', 'MIXING', 'MASTERING', 'READY'],
+          },
+        },
+        orderBy: { startedAt: "asc" },
+        include: { 
+          artist: true,
+          studio: true,
+          files: true,
+        }
+      })
+    }
+>>>>>>> granton-auth-nest
   }
 
   async createFromBooking(dto: CreateProjectDto) {
