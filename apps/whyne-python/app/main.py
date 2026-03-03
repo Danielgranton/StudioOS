@@ -14,7 +14,10 @@ def create_app(test_config: dict | None = None) -> Flask:
 	app = Flask(__name__)
 
 	app.config.from_mapping(
-		SQLALCHEMY_DATABASE_URI=os.getenv("DATABASE_URL", "sqlite:///booking_dev.db"),
+		SQLALCHEMY_DATABASE_URI=os.getenv(
+			"DATABASE_URL",
+			"postgresql://postgres:madtitan634@localhost:5432/studioos",
+		),
 		SQLALCHEMY_TRACK_MODIFICATIONS=False,
 		SCHEDULER_ENABLED=True,
 		GRANTON_BASE_URL=os.getenv("GRANTON_BASE_URL", "http://localhost:3000"),

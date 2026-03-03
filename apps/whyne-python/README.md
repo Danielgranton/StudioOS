@@ -69,12 +69,12 @@ pip install -r requirements.txt
 python -m app.main
 ```
 
-Default DB: SQLite (`booking_dev.db`)
+Default DB: shared PostgreSQL (`studioos`).
 
 To use PostgreSQL, set:
 
 ```bash
-export DATABASE_URL="postgresql://postgres:password@localhost:5432/studioos?schema=public"
+export DATABASE_URL="postgresql://postgres:password@localhost:5432/studioos"
 export GRANTON_BASE_URL="http://127.0.0.1:3000"
 export SHAN_BASE_URL="http://127.0.0.1:5000"
 export GRANTON_SERVICE_SECRET="shared-internal-secret" # optional
