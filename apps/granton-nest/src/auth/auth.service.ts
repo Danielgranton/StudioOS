@@ -44,4 +44,16 @@
       const payload = { sub: user.id, email: user.email, role: user.role, name: user.name };
       return { access_token: this.jwtService.sign(payload) };
     }
+
+    async getUserSummary(userId: number) {
+      return this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+        },
+      });
+    }
   }
