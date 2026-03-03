@@ -45,6 +45,19 @@
       return { access_token: this.jwtService.sign(payload) };
     }
 
+    async getUserSummary(userId: number) {
+      return this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+        },
+      });
+    }
+  
+
     private hashPassword(password: string): string {
       const salt = randomBytes(16).toString('hex');
       const hash = scryptSync(password, salt, 64).toString('hex');
@@ -61,4 +74,4 @@
       const actualHash = scryptSync(password, salt, 64).toString('hex');
       return timingSafeEqual(Buffer.from(actualHash, 'hex'), Buffer.from(expectedHash, 'hex'));
     }
-  }
+}

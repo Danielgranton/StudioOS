@@ -10,6 +10,9 @@ def test_overlapping_bookings_block_slot(app, users):
         booking = SessionBooking(
             artist_id=users["artist_id"],
             producer_id=users["producer_id"],
+            studio_id="studio-1",
+            project_title="Session A",
+            booking_ref="BKG-000001",
             session_date=date(2026, 3, 10),
             start_time=time(10, 0, 0),
             end_time=time(12, 0, 0),
@@ -34,6 +37,9 @@ def test_end_time_equal_start_time_is_allowed(app, users):
         booking = SessionBooking(
             artist_id=users["artist_id"],
             producer_id=users["producer_id"],
+            studio_id="studio-1",
+            project_title="Session B",
+            booking_ref="BKG-000002",
             session_date=date(2026, 3, 11),
             start_time=time(10, 0, 0),
             end_time=time(12, 0, 0),
@@ -58,6 +64,9 @@ def test_cancelled_booking_does_not_block_slot(app, users):
         booking = SessionBooking(
             artist_id=users["artist_id"],
             producer_id=users["producer_id"],
+            studio_id="studio-1",
+            project_title="Session C",
+            booking_ref="BKG-000003",
             session_date=date(2026, 3, 12),
             start_time=time(14, 0, 0),
             end_time=time(16, 0, 0),

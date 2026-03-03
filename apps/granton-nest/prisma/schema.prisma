@@ -13,15 +13,18 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String
-  password  String
-  role      Role     @default(USER)
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  name     String
+  password String
+  role     Role   @default(USER)
 
-  studios   Studio[]
-  projectsAsArtist   Project[] @relation("ArtistProjects")
-  projectsAsProducer Project[] @relation("ProducerProjects")
+  studios                   Studio[]
+  projectsAsArtist          Project[]        @relation("ArtistProjects")
+  projectsAsProducer        Project[]        @relation("ProducerProjects")
+  projectMessages           ProjectMessage[]
+  sessionBookingsAsArtist   SessionBooking[] @relation("ArtistSessionBookings")
+  sessionBookingsAsProducer SessionBooking[] @relation("ProducerSessionBookings")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -34,58 +37,98 @@ model Studio {
   services     String[]
   pricing      Json?
   availability String
- 
 
   ownerId Int
-  owner   User  @relation(fields: [ownerId], references: [id])
+  owner   User @relation(fields: [ownerId], references: [id])
 
-  projects Project[]
+  projects        Project[]
+  sessionBookings SessionBooking[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Project {
-  id           Int           @id @default(autoincrement())
-  title        String
-  status       ProjectStatus @default(BOOKED)
-  progress     Int           @default(20)
+  id       Int           @id @default(autoincrement())
+  title    String
+  status   ProjectStatus @default(BOOKED)
+  progress Int           @default(20)
 
-  artistId     Int
-  producerId   Int
-  studioId     String
+  artistId   Int
+  producerId Int
+  studioId   String
 
-  bookingRef   String
-  paymentRef   String?
+  bookingRef String
+  paymentRef String?
 
-  startedAt    DateTime      @default(now())
-  dueAt        DateTime      // startedAt + 7 days
-  completedAt  DateTime?
+  startedAt   DateTime  @default(now())
+  dueAt       DateTime // startedAt + 7 days
+  completedAt DateTime?
 
-  artist       User          @relation("ArtistProjects", fields: [artistId], references: [id])
-  producer     User          @relation("ProducerProjects", fields: [producerId], references: [id])
-  studio       Studio        @relation(fields: [studioId], references: [id])
+  artist   User   @relation("ArtistProjects", fields: [artistId], references: [id])
+  producer User   @relation("ProducerProjects", fields: [producerId], references: [id])
+  studio   Studio @relation(fields: [studioId], references: [id])
 
-  files        ProjectFile[]
+  files           ProjectFile[]
+  messages        ProjectMessage[]
+  deliveries      ProjectDelivery[]
+  sessionBookings SessionBooking[]
 
+  predictedCompletion DateTime?
+  riskLevel           String?
 
-  predictedCompletion  DateTime?
-  riskLevel    String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SessionBooking {
+  id            Int                  @id @default(autoincrement())
+  artistId      Int                  @map("artist_id")
+  producerId    Int                  @map("producer_id")
+  studioId      String               @map("studio_id")
+  projectTitle  String               @map("project_title")
+  bookingRef    String               @unique @map("booking_ref")
+  projectId     Int?                 @map("project_id")
+  paymentRef    String?              @map("payment_ref")
+  paymentStatus BookingPaymentStatus @default(BOOKED) @map("payment_status")
+
+  sessionDate DateTime      @map("session_date") @db.Date
+  startTime   DateTime      @map("start_time") @db.Time(6)
+  endTime     DateTime      @map("end_time") @db.Time(6)
+  status      BookingStatus @default(PENDING)
+
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  approvedAt         DateTime? @map("approved_at")
+  recordingStartedAt DateTime? @map("recording_started_at")
+  mixingStartedAt    DateTime? @map("mixing_started_at")
+  expectedReadyAt    DateTime? @map("expected_ready_at")
+  readyAt            DateTime? @map("ready_at")
+  deliveredAt        DateTime? @map("delivered_at")
+
+  artist   User     @relation("ArtistSessionBookings", fields: [artistId], references: [id])
+  producer User     @relation("ProducerSessionBookings", fields: [producerId], references: [id])
+  studio   Studio   @relation(fields: [studioId], references: [id])
+  project  Project? @relation(fields: [projectId], references: [id])
+
+  @@index([artistId])
+  @@index([producerId])
+  @@index([studioId])
+  @@index([projectId])
+  @@map("session_bookings")
 }
 
 model ProjectFile {
-  id          Int      @id @default(autoincrement())
-  projectId   Int
-  stage       ProjectStatus
+  id        Int           @id @default(autoincrement())
+  projectId Int
+  stage     ProjectStatus
 
-  software    String   // e.g. "FL Studio", "Pro Tools"
-  projectPath String   // local path or network path
+  software    String // e.g. "FL Studio", "Pro Tools"
+  projectPath String // local path or network path
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  project     Project  @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
 }
 
 model ProjectMessage {
@@ -100,9 +143,9 @@ model ProjectMessage {
 }
 
 model ProjectDelivery {
-  id         Int      @id @default(autoincrement())
-  projectId  Int
-  fileUrl    String
+  id          Int      @id @default(autoincrement())
+  projectId   Int
+  fileUrl     String
   deliveredAt DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id])
@@ -123,4 +166,19 @@ enum ProjectStatus {
   MIXING
   MASTERING
   READY
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  RECORDING
+  MIXING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum BookingPaymentStatus {
+  BOOKED
+  FULLY_PAID
 }

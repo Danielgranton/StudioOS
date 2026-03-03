@@ -20,9 +20,10 @@ app/
 │   └── bookings.py
 ├── services/
 │   ├── availability.py
-│   └── booking_service.py
+│   ├── booking_service.py
+│   ├── granton_client.py
+│   └── payment_client.py
 ├── models/
-│   ├── user.py
 │   └── booking.py
 ├── automation.py
 └── main.py
@@ -68,18 +69,23 @@ pip install -r requirements.txt
 python -m app.main
 ```
 
-4. Seed sample users (optional, for quick testing)
-
-```bash
-python -m app.seed
-```
-
-Default DB: SQLite (`booking_dev.db`)
+Default DB: shared PostgreSQL (`studioos`).
 
 To use PostgreSQL, set:
 
 ```bash
-export DATABASE_URL="postgresql://user:password@localhost:5432/studio_booking"
+export DATABASE_URL="postgresql://postgres:password@localhost:5432/studioos"
+export GRANTON_BASE_URL="http://127.0.0.1:3000"
+export SHAN_BASE_URL="http://127.0.0.1:5000"
+export GRANTON_SERVICE_SECRET="shared-internal-secret" # optional
+export WHYNE_WEBHOOK_SECRET="shared-payment-secret"   # optional
+```
+
+Run DB migration (required after this integration refactor):
+
+```bash
+export FLASK_APP=app.main:create_app
+python -m flask db upgrade -d migrations
 ```
 
 ## Example cURL Requests
@@ -89,12 +95,29 @@ Create booking:
 ```bash
 curl -X POST http://127.0.0.1:5000/bookings \
 	-H "Content-Type: application/json" \
+	-H "x-user-id: 1" \
+	-H "x-user-role: ARTIST" \
 	-d '{
 		"artist_id": 1,
 		"producer_id": 2,
+		"studio_id": "uuid-from-granton-studio",
+		"project_title": "Single Tracking Session",
 		"session_date": "2026-03-15",
 		"start_time": "10:00:00",
 		"end_time": "12:00:00"
+	}'
+```
+
+Request payment (calls `shan-python`):
+
+```bash
+curl -X POST http://127.0.0.1:5000/bookings/1/request-payment \
+	-H "Content-Type: application/json" \
+	-H "x-user-id: 1" \
+	-H "x-user-role: ARTIST" \
+	-d '{
+		"phone": "2547XXXXXXXX",
+		"amount": 5000
 	}'
 ```
 
@@ -103,37 +126,62 @@ Approve booking:
 ```bash
 curl -X POST http://127.0.0.1:5000/bookings/1/approve \
 	-H "Content-Type: application/json" \
+	-H "x-user-id: 2" \
+	-H "x-user-role: PRODUCER" \
 	-d '{"producer_id": 2}'
 ```
 
 Start recording:
 
 ```bash
-curl -X POST http://127.0.0.1:5000/bookings/1/start-recording
+curl -X POST http://127.0.0.1:5000/bookings/1/start-recording \
+	-H "x-user-id: 2" \
+	-H "x-user-role: PRODUCER"
 ```
 
 Start mixing:
 
 ```bash
-curl -X POST http://127.0.0.1:5000/bookings/1/start-mixing
+curl -X POST http://127.0.0.1:5000/bookings/1/start-mixing \
+	-H "x-user-id: 2" \
+	-H "x-user-role: PRODUCER"
 ```
 
 Mark ready:
 
 ```bash
-curl -X POST http://127.0.0.1:5000/bookings/1/mark-ready
+curl -X POST http://127.0.0.1:5000/bookings/1/mark-ready \
+	-H "x-user-id: 2" \
+	-H "x-user-role: PRODUCER"
 ```
 
 Deliver:
 
 ```bash
-curl -X POST http://127.0.0.1:5000/bookings/1/deliver
+curl -X POST http://127.0.0.1:5000/bookings/1/deliver \
+	-H "x-user-id: 1" \
+	-H "x-user-role: ARTIST"
+```
+
+Payment sync webhook (typically called by `shan-python`):
+
+```bash
+curl -X POST http://127.0.0.1:5000/bookings/payment-webhook \
+	-H "Content-Type: application/json" \
+	-H "x-webhook-secret: shared-payment-secret" \
+	-d '{
+		"bookingRef": "BKG-ABC123DEF456",
+		"isFullPayment": true,
+		"paymentRef": "MPE123XYZ"
+	}'
 ```
 
 Calendar view:
 
 ```bash
-curl "http://127.0.0.1:5000/calendar?producer_id=2&month=2026-03"
+curl "http://127.0.0.1:5000/calendar?producer_id=2&month=2026-03" \
+	-H "x-user-id: 2" \
+	-H "x-user-role: PRODUCER"
 ```
 
 ## Automation Logic
@@ -166,8 +214,6 @@ pytest
 
 ## Future Extensions (not implemented)
 
-- Notification service module
 - AI delay prediction based on historical mixing durations
 - Producer workload analytics
 - Revenue per time-slot tracking
-
