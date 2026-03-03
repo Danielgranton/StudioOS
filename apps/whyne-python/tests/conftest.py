@@ -2,7 +2,6 @@ import pytest
 
 from app.extensions import db
 from app.main import create_app
-from app.models import User, UserRole
 
 
 @pytest.fixture
@@ -12,18 +11,13 @@ def app():
             "TESTING": True,
             "SQLALCHEMY_DATABASE_URI": "sqlite://",
             "SCHEDULER_ENABLED": False,
+            "VALIDATE_REMOTE_USERS": False,
+            "SYNC_PROJECTS": False,
         }
     )
 
     with flask_app.app_context():
         db.create_all()
-
-        artist = User(name="Artist One", email="artist@example.com", role=UserRole.ARTIST)
-        producer = User(
-            name="Producer One", email="producer@example.com", role=UserRole.PRODUCER
-        )
-        db.session.add_all([artist, producer])
-        db.session.commit()
 
         yield flask_app
 
@@ -38,7 +32,18 @@ def client(app):
 
 @pytest.fixture
 def users(app):
-    with app.app_context():
-        artist = User.query.filter_by(email="artist@example.com").first()
-        producer = User.query.filter_by(email="producer@example.com").first()
-        return {"artist_id": artist.id, "producer_id": producer.id}
+    return {"artist_id": 1, "producer_id": 2}
+
+
+@pytest.fixture
+def auth_headers(users):
+    return {
+        "artist": {
+            "x-user-id": str(users["artist_id"]),
+            "x-user-role": "ARTIST",
+        },
+        "producer": {
+            "x-user-id": str(users["producer_id"]),
+            "x-user-role": "PRODUCER",
+        },
+    }

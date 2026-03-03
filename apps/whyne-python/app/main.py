@@ -17,6 +17,14 @@ def create_app(test_config: dict | None = None) -> Flask:
 		SQLALCHEMY_DATABASE_URI=os.getenv("DATABASE_URL", "sqlite:///booking_dev.db"),
 		SQLALCHEMY_TRACK_MODIFICATIONS=False,
 		SCHEDULER_ENABLED=True,
+		GRANTON_BASE_URL=os.getenv("GRANTON_BASE_URL", "http://localhost:3000"),
+		GRANTON_SERVICE_SECRET=os.getenv("GRANTON_SERVICE_SECRET", ""),
+		GRANTON_TIMEOUT_SECONDS=int(os.getenv("GRANTON_TIMEOUT_SECONDS", "8")),
+		VALIDATE_REMOTE_USERS=os.getenv("VALIDATE_REMOTE_USERS", "true").lower() == "true",
+		SYNC_PROJECTS=os.getenv("SYNC_PROJECTS", "true").lower() == "true",
+		SHAN_BASE_URL=os.getenv("SHAN_BASE_URL", "http://localhost:5000"),
+		SHAN_TIMEOUT_SECONDS=int(os.getenv("SHAN_TIMEOUT_SECONDS", "8")),
+		WHYNE_WEBHOOK_SECRET=os.getenv("WHYNE_WEBHOOK_SECRET", ""),
 	)
 
 	if test_config:

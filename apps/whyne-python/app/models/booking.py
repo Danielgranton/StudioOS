@@ -16,12 +16,28 @@ class BookingStatus(str, Enum):
     CANCELLED = "CANCELLED"
 
 
+class BookingPaymentStatus(str, Enum):
+    BOOKED = "BOOKED"
+    FULLY_PAID = "FULLY_PAID"
+
+
 class SessionBooking(db.Model):
     __tablename__ = "session_bookings"
 
     id = db.Column(db.Integer, primary_key=True)
-    artist_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    producer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    # IDs come from granton-nest User table and are validated over REST.
+    artist_id = db.Column(db.Integer, nullable=False)
+    producer_id = db.Column(db.Integer, nullable=False)
+    studio_id = db.Column(db.String(255), nullable=False)
+    project_title = db.Column(db.String(255), nullable=False)
+    booking_ref = db.Column(db.String(64), unique=True, nullable=False)
+    project_id = db.Column(db.Integer, nullable=True)
+    payment_ref = db.Column(db.String(255), nullable=True)
+    payment_status = db.Column(
+        db.Enum(BookingPaymentStatus, native_enum=False, validate_strings=True),
+        nullable=False,
+        default=BookingPaymentStatus.BOOKED,
+    )
     session_date = db.Column(db.Date, nullable=False)
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
@@ -42,9 +58,6 @@ class SessionBooking(db.Model):
     expected_ready_at = db.Column(db.DateTime, nullable=True)
     ready_at = db.Column(db.DateTime, nullable=True)
     delivered_at = db.Column(db.DateTime, nullable=True)
-
-    artist = db.relationship("User", foreign_keys=[artist_id])
-    producer = db.relationship("User", foreign_keys=[producer_id])
 
     @staticmethod
     def _allowed_transitions() -> dict[BookingStatus, set[BookingStatus]]:
@@ -98,6 +111,12 @@ class SessionBooking(db.Model):
             "id": self.id,
             "artist_id": self.artist_id,
             "producer_id": self.producer_id,
+            "studio_id": self.studio_id,
+            "project_title": self.project_title,
+            "booking_ref": self.booking_ref,
+            "project_id": self.project_id,
+            "payment_ref": self.payment_ref,
+            "payment_status": self.payment_status.value,
             "session_date": self.session_date.isoformat() if self.session_date else None,
             "start_time": self.start_time.isoformat() if self.start_time else None,
             "end_time": self.end_time.isoformat() if self.end_time else None,

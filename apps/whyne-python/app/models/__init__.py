@@ -1,4 +1,3 @@
-from app.models.booking import BookingStatus, SessionBooking
-from app.models.user import User, UserRole
+from app.models.booking import BookingPaymentStatus, BookingStatus, SessionBooking
 
-__all__ = ["User", "UserRole", "SessionBooking", "BookingStatus"]
+__all__ = ["SessionBooking", "BookingStatus", "BookingPaymentStatus"]
