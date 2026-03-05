@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "echo \"Run dev scripts inside apps\""
+    "dev": "echo \"Run dev scripts inside apps\"",
+    "install-hooks": "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit && echo 'Git hooks installed from .githooks'"
   }
 }
