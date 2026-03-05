@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MAX_FILE_SIZE_BYTES=100000000
+
+staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+if [[ -z "$staged_files" ]]; then
+  exit 0
+fi
+
+if echo "$staged_files" | grep -Eq '(^|/)node_modules/'; then
+  echo "❌ Commit blocked: node_modules files are staged."
+  echo "   Remove them from index with: git rm -r --cached node_modules"
+  exit 1
+fi
+
+oversized_found=0
+
+while IFS= read -r file; do
+  [[ -z "$file" ]] && continue
+  [[ ! -f "$file" ]] && continue
+
+  size_bytes=$(wc -c < "$file")
+  if (( size_bytes > MAX_FILE_SIZE_BYTES )); then
+    oversized_found=1
+    size_mb=$(awk "BEGIN { printf \"%.2f\", $size_bytes / 1000000 }")
+    echo "❌ Commit blocked: '$file' is ${size_mb}MB (>100MB GitHub limit)."
+  fi
+done <<< "$staged_files"
+
+if (( oversized_found == 1 )); then
+  echo "   Remove or use Git LFS for large assets."
+  exit 1
+fi
+
+exit 0
