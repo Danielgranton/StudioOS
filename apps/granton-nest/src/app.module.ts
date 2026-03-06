@@ -7,6 +7,9 @@ import { ProjectsModule } from './projects/projects.module';
 import { StudiosModule } from './studios/studios.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { BeatsModule } from './beats/beats.module';
+import { CommunicationModule } from './communication/communication.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -15,6 +18,9 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     ProjectsModule,
     StudiosModule,
     WebhooksModule,
+    BeatsModule,
+    CommunicationModule,
+    NotificationModule,
     ScheduleModule.forRoot(),
   ],
   controllers: [AppController],

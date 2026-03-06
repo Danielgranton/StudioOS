@@ -13,7 +13,6 @@ import { ProjectsService } from "./projects.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
 import { UpdateProjectStatusDto } from "./dto/update-project-status.dto";
 import { AttachProjectDto } from "./dto/attach-project.dto";
-import { CreateProjectMessageDto } from "./dto/create-project-message.dto";
 import { Roles } from "../roles/roles.decorator";
 
 import { RolesGuard } from "../roles/roles.guard";
@@ -74,16 +73,5 @@ export class ProjectsController {
       studioLoad: this.projectService.studioLoad(),
       delays: this.projectService.delayedProjects(),
     }
-  }
-
-  @Post(':id/chat')
-  @Roles('ARTIST', 'PRODUCER')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  sendMessage(
-    @Param('id') id: string,
-    @Req() req: { user: { userId: number } },
-    @Body() dto: CreateProjectMessageDto,
-  ) {
-    return this.projectService.createMessage(+id, req.user.userId, dto.message);
   }
 }
