@@ -17,4 +17,5 @@ class Config:
         'NEST_PAYMENT_WEBHOOK_URL',
         default='http://localhost:3000/webhooks/payment',
     )
+    NEST_API_BASE_URL = config('NEST_API_BASE_URL', default='http://localhost:3000')
     NEST_WEBHOOK_SECRET = config('NEST_WEBHOOK_SECRET', default='')

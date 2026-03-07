@@ -125,16 +125,6 @@
         }
       })
     }
-
-
-      async createMessage(projectId: number, senderId: number, message: string) {
-    return this.prisma.projectMessage.create({
-      data: { projectId, senderId, message },
-    });
-    }
-
-    
-
     async producerDashboard(producerId: number) {
       return this.prisma.project.findMany({
         where: {
@@ -152,4 +142,3 @@
       })
     }
   }
-

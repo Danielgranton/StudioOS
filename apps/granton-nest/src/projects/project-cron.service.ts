@@ -1,8 +1,8 @@
-import { Injectable, Logger }  from "@nestjs/common";
-import { Cron } from "@nestjs/schedule";
-import { PrismaService } from "prisma/prisma.service";
-import { ProjectStatus } from "@prisma/client";
-import { NotificationService } from "src/notification/notification.service";
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import { ProjectStatus } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class ProjectCronService {
