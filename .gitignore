@@ -30,3 +30,6 @@ yarn-error.log*
 .idea/
 *.swp
 *.swo
+# Local virtualenvs
+.venv/
+**/.venv/

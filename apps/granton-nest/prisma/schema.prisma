@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 datasource db {
   provider = "postgresql"
 }
@@ -19,9 +16,27 @@ model User {
   password String
   role     Role   @default(USER)
 
-  studios            Studio[]
-  projectsAsArtist   Project[] @relation("ArtistProjects")
-  projectsAsProducer Project[] @relation("ProducerProjects")
+  studios   Studio[]
+  beats     Beat[]         @relation("ProducerBeats")
+  purchases BeatPurchase[]
+  likes     BeatLike[]
+  beatPlays BeatPlay[]
+
+  projectsAsArtist          Project[]        @relation("ArtistProjects")
+  projectsAsProducer        Project[]        @relation("ProducerProjects")
+  sessionBookingsAsArtist   SessionBooking[] @relation("ArtistSessionBookings")
+  sessionBookingsAsProducer SessionBooking[] @relation("ProducerSessionBookings")
+
+  conversationParticipants ConversationParticipant[]
+  sentMessages             Message[]                 @relation("SenderMessages")
+  messageDeliveries        MessageDelivery[]
+  initiatedCalls           CallSession[]             @relation("CallInitiator")
+  endedCalls               CallSession[]             @relation("CallEndedBy")
+  blockedUsers             UserBlock[]               @relation("UserBlocksByBlocker")
+  blockedByUsers           UserBlock[]               @relation("UserBlocksByBlocked")
+  messageReports           MessageReport[]           @relation("ReporterMessageReports")
+  notifications            Notification[]
+  auditLogs                AuditLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -38,9 +53,11 @@ model Studio {
   ownerId Int
   owner   User @relation(fields: [ownerId], references: [id])
 
+  projects        Project[]
+  sessionBookings SessionBooking[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  projects  Project[]
 }
 
 model Project {
@@ -56,18 +73,65 @@ model Project {
   bookingRef String
   paymentRef String?
 
-  startedAt   DateTime @default(now())
-  dueAt       DateTime // startedAt + 7 days
+  startedAt   DateTime  @default(now())
+  dueAt       DateTime
   completedAt DateTime?
 
   artist   User   @relation("ArtistProjects", fields: [artistId], references: [id])
   producer User   @relation("ProducerProjects", fields: [producerId], references: [id])
   studio   Studio @relation(fields: [studioId], references: [id])
 
-  files ProjectFile[]
+  files           ProjectFile[]
+  deliveries      ProjectDelivery[]
+  sessionBookings SessionBooking[]
+  conversations   Conversation[]
+
+  predictedCompletion DateTime?
+  riskLevel           String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model SessionBooking {
+  id            Int                  @id @default(autoincrement())
+  artistId      Int                  @map("artist_id")
+  producerId    Int                  @map("producer_id")
+  studioId      String               @map("studio_id")
+  projectTitle  String               @map("project_title")
+  bookingRef    String               @unique @map("booking_ref")
+  projectId     Int?                 @map("project_id")
+  paymentRef    String?              @map("payment_ref")
+  paymentStatus BookingPaymentStatus @default(BOOKED) @map("payment_status")
+
+  sessionDate DateTime      @map("session_date") @db.Date
+  startTime   DateTime      @map("start_time") @db.Time(6)
+  endTime     DateTime      @map("end_time") @db.Time(6)
+  status      BookingStatus @default(PENDING)
+
+  totalAmount   Int @default(0) @map("total_amount")
+  depositAmount Int @default(0) @map("deposit_amount")
+  balanceAmount Int @default(0) @map("balance_amount")
+
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  approvedAt         DateTime? @map("approved_at")
+  recordingStartedAt DateTime? @map("recording_started_at")
+  mixingStartedAt    DateTime? @map("mixing_started_at")
+  expectedReadyAt    DateTime? @map("expected_ready_at")
+  readyAt            DateTime? @map("ready_at")
+  deliveredAt        DateTime? @map("delivered_at")
+
+  artist   User     @relation("ArtistSessionBookings", fields: [artistId], references: [id])
+  producer User     @relation("ProducerSessionBookings", fields: [producerId], references: [id])
+  studio   Studio   @relation(fields: [studioId], references: [id])
+  project  Project? @relation(fields: [projectId], references: [id])
+
+  @@index([artistId])
+  @@index([producerId])
+  @@index([studioId])
+  @@index([projectId])
+  @@map("session_bookings")
 }
 
 model ProjectFile {
@@ -75,12 +139,286 @@ model ProjectFile {
   projectId Int
   stage     ProjectStatus
 
-  software    String // e.g. "FL Studio", "Pro Tools"
-  projectPath String // local path or network path
+  software    String
+  projectPath String
 
   createdAt DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id])
+}
+
+model ProjectDelivery {
+  id          Int      @id @default(autoincrement())
+  projectId   Int
+  fileUrl     String
+  deliveredAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+model Conversation {
+  id          String           @id @default(uuid())
+  type        ConversationType
+  projectId   Int?
+  bookingRef  String?
+  beatId      String?
+  artistId    Int?
+  producerId  Int?
+  createdById Int
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  project      Project?                  @relation(fields: [projectId], references: [id])
+  beat         Beat?                     @relation(fields: [beatId], references: [id])
+  participants ConversationParticipant[]
+  messages     Message[]
+  actions      ConversationAction[]
+  calls        CallSession[]
+
+  @@index([type])
+  @@index([projectId])
+  @@index([bookingRef])
+  @@index([beatId])
+  @@index([artistId, producerId])
+}
+
+model ConversationParticipant {
+  id                String    @id @default(uuid())
+  conversationId    String
+  userId            Int
+  joinedAt          DateTime  @default(now())
+  leftAt            DateTime?
+  lastReadMessageId String?
+  lastReadAt        DateTime?
+  unreadCount       Int       @default(0)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id               String           @id @default(uuid())
+  conversationId   String
+  senderId         Int
+  content          String?
+  messageType      MessageType      @default(TEXT)
+  metadata         Json?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  editedAt         DateTime?
+  deletedAt        DateTime?
+  moderationStatus ModerationStatus @default(ACTIVE)
+  moderatedAt      DateTime?
+  moderatedById    Int?
+
+  conversation Conversation        @relation(fields: [conversationId], references: [id])
+  sender       User                @relation("SenderMessages", fields: [senderId], references: [id])
+  attachments  MessageAttachment[]
+  deliveries   MessageDelivery[]
+  reports      MessageReport[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+model MessageDelivery {
+  id          String         @id @default(uuid())
+  messageId   String
+  userId      Int
+  status      DeliveryStatus @default(SENT)
+  deliveredAt DateTime?
+  readAt      DateTime?
+  createdAt   DateTime       @default(now())
+
+  message Message @relation(fields: [messageId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([messageId, userId])
+  @@index([userId, status])
+  @@index([messageId])
+}
+
+model MessageReport {
+  id         String    @id @default(uuid())
+  messageId  String
+  reporterId Int
+  reason     String
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  message  Message @relation(fields: [messageId], references: [id])
+  reporter User    @relation("ReporterMessageReports", fields: [reporterId], references: [id])
+
+  @@index([messageId, createdAt])
+  @@index([reporterId, createdAt])
+}
+
+model UserBlock {
+  id        String   @id @default(uuid())
+  blockerId Int
+  blockedId Int
+  createdAt DateTime @default(now())
+
+  blocker User @relation("UserBlocksByBlocker", fields: [blockerId], references: [id])
+  blocked User @relation("UserBlocksByBlocked", fields: [blockedId], references: [id])
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+model AuditLog {
+  id        String         @id @default(uuid())
+  actorId   Int
+  eventType AuditEventType
+  targetId  String?
+  metadata  Json?
+  createdAt DateTime       @default(now())
+
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([actorId, createdAt])
+  @@index([eventType, createdAt])
+}
+
+model MessageAttachment {
+  id        String   @id @default(uuid())
+  messageId String
+  fileUrl   String
+  fileType  String
+  fileName  String?
+  fileSize  Int?
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id])
+
+  @@index([messageId])
+}
+
+model ConversationAction {
+  id             String                 @id @default(uuid())
+  conversationId String
+  messageId      String?
+  actorId        Int
+  actionType     ConversationActionType
+  payload        Json?
+  createdAt      DateTime               @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+
+  @@index([conversationId, createdAt])
+}
+
+model CallSession {
+  id             String     @id @default(uuid())
+  conversationId String
+  initiatorId    Int
+  type           CallType
+  status         CallStatus @default(RINGING)
+  acceptedAt     DateTime?
+  endedAt        DateTime?
+  endedById      Int?
+  endedReason    String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  initiator    User         @relation("CallInitiator", fields: [initiatorId], references: [id])
+  endedBy      User?        @relation("CallEndedBy", fields: [endedById], references: [id])
+
+  @@index([conversationId, status])
+  @@index([initiatorId, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    Int
+  type      NotificationType
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead, createdAt])
+}
+
+model Beat {
+  id              String   @id @default(uuid())
+  producer        User     @relation("ProducerBeats", fields: [producerId], references: [id])
+  producerId      Int
+  title           String
+  genre           String?
+  bpm             Int?
+  musicalKey      String?
+  description     String?
+  coverImageUrl   String?
+  previewAudioUrl String
+  fullAudioUrl    String
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  licenses      BeatLicense[]
+  purchases     BeatPurchase[]
+  likes         BeatLike[]
+  plays         BeatPlay[]
+  conversations Conversation[]
+}
+
+model BeatLicense {
+  id          String   @id @default(uuid())
+  beat        Beat     @relation(fields: [beatId], references: [id])
+  beatId      String
+  name        String
+  price       Int
+  includesWav Boolean  @default(false)
+  isExclusive Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  purchases BeatPurchase[]
+}
+
+model BeatPurchase {
+  id            String            @id @default(uuid())
+  artist        User              @relation(fields: [artistId], references: [id])
+  artistId      Int
+  beat          Beat              @relation(fields: [beatId], references: [id])
+  beatId        String
+  license       BeatLicense       @relation(fields: [licenseId], references: [id])
+  licenseId     String
+  amountPaid    Int
+  paymentRef    String?           @unique
+  paymentStatus BeatPaymentStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+
+  @@index([artistId])
+  @@index([beatId])
+  @@index([paymentStatus])
+}
+
+model BeatLike {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  beat      Beat     @relation(fields: [beatId], references: [id])
+  beatId    String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, beatId])
+}
+
+model BeatPlay {
+  id       String   @id @default(uuid())
+  user     User?    @relation(fields: [userId], references: [id])
+  userId   Int?
+  beat     Beat     @relation(fields: [beatId], references: [id])
+  beatId   String
+  playedAt DateTime @default(now())
 }
 
 enum Role {
@@ -98,4 +436,100 @@ enum ProjectStatus {
   MIXING
   MASTERING
   READY
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  RECORDING
+  MIXING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum BookingPaymentStatus {
+  BOOKED
+  FULLY_PAID
+}
+
+enum BeatPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum ConversationType {
+  GENERAL_CHAT
+  BOOKING_CHAT
+  PROJECT_CHAT
+  BEAT_INQUIRY
+  SUPPORT_CHAT
+}
+
+enum MessageType {
+  TEXT
+  VOICE
+  FILE
+  BEAT_SHARE
+  BOOKING_REQUEST
+  PROJECT_UPDATE
+  PAYMENT_REQUEST
+}
+
+enum ConversationActionType {
+  BOOKING_REQUEST_SENT
+  BOOKING_REQUEST_ACCEPTED
+  BOOKING_REQUEST_DECLINED
+  PAYMENT_REQUEST_SENT
+  PAYMENT_REQUEST_PAID
+  PROJECT_STATUS_CHANGED
+  BEAT_SHARED
+}
+
+enum NotificationType {
+  NEW_MESSAGE
+  BEAT_SHARED
+  BOOKING_REQUEST
+  PAYMENT_REQUEST
+  PROJECT_UPDATE
+  INCOMING_CALL
+  MISSED_CALL
+}
+
+enum CallType {
+  AUDIO
+  VIDEO
+}
+
+enum CallStatus {
+  RINGING
+  ACTIVE
+  REJECTED
+  MISSED
+  ENDED
+}
+
+enum DeliveryStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+enum ModerationStatus {
+  ACTIVE
+  EDITED
+  DELETED
+  FLAGGED
+}
+
+enum AuditEventType {
+  MESSAGE_CREATED
+  MESSAGE_EDITED
+  MESSAGE_DELETED
+  MESSAGE_REPORTED
+  USER_BLOCKED
+  USER_UNBLOCKED
+  CONVERSATION_CREATED
+  ACTION_CREATED
 }

@@ -18,6 +18,12 @@ def create_app():
         'MPESA_PASSKEY': config('MPESA_PASSKEY'),
         'MPESA_CALLBACK_URL': config('MPESA_CALLBACK_URL', default=config('MPESA_SAF_CALLBACK_URL', default='https://example.com/callback')),
         'MPESA_ENVIRONMENT': config('MPESA_ENVIRONMENT', default='sandbox'),
+        'NEST_PAYMENT_WEBHOOK_URL': config(
+            'NEST_PAYMENT_WEBHOOK_URL',
+            default='http://localhost:3000/webhooks/payment',
+        ),
+        'NEST_API_BASE_URL': config('NEST_API_BASE_URL', default='http://localhost:3000'),
+        'NEST_WEBHOOK_SECRET': config('NEST_WEBHOOK_SECRET', default=''),
     })
 
     mpesa.init_app(app)
